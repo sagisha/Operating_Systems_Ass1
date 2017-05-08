@@ -46,6 +46,16 @@ struct context {
   uint eip;
 };
 
+
+// Performance stuct of a process
+struct perf {
+	int ctime;
+	int ttime;
+	int stime;
+	int retime;
+	int rutime;
+};
+
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
@@ -63,6 +73,13 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int status;              	   // Process exit code
+  int ntickets;				   // Process priority for lottery scheduling
+  int ctime;				   // Process creation time
+  int ttime;				   // Process termination time
+  int stime;				   // The time the process spent in the SLEEPING state
+  int retime;				   // The time the process spent in the READY state
+  int rutime;				   // The time the process spent in the RUNNING state
 };
 
 // Process memory is laid out contiguously, low addresses first:

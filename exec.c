@@ -10,6 +10,11 @@
 void 
 pseudo_main(int (*entry)(int, char**), int argc, char **argv) 
 {
+	int status = entry(argc, argv);
+	asm("push %0; movl $2, %%eax; int $64;"
+		 :
+		 :"r"(status)
+		 :"%eax");
 }
 
 int
@@ -89,9 +94,9 @@ exec(char *path, char **argv)
   }
   ustack[3+argc] = 0;
 
-  ustack[0] = 0xffffffff;  // fake return PC
-  ustack[1] = argc;
-  ustack[2] = sp - (argc+1)*4;  // argv pointer
+  ustack[1] = elf.entry;  // main function address
+  ustack[2] = argc;
+  ustack[3] = sp - (argc+1)*4;  // argv pointer
 
   sp -= (3+argc+1) * 4;
   if(copyout(pgdir, sp, ustack, (3+argc+1)*4) < 0)
@@ -107,7 +112,7 @@ exec(char *path, char **argv)
   oldpgdir = proc->pgdir;
   proc->pgdir = pgdir;
   proc->sz = sz;
-  proc->tf->eip = elf.entry;  // main
+  proc->tf->eip = pointer_pseudo_main;  // pseudo_main
   proc->tf->esp = sp;
   switchuvm(proc);
   freevm(oldpgdir);

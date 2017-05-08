@@ -1,10 +1,14 @@
 struct stat;
 struct rtcdate;
+struct perf;
 
 // system calls
 int fork(void);
-int exit(void) __attribute__((noreturn));
-int wait(void);
+int policy(int);
+int priority(int);
+int exit(int) __attribute__((noreturn));
+int wait(int*);
+int wait_stat(int*, struct perf*);
 int pipe(int*);
 int write(int, void*, int);
 int read(int, void*, int);

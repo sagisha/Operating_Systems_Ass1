@@ -163,6 +163,10 @@ _path:
 	echo "/:/bin/:" > _path
 
 UPROGS=\
+	_sanity\
+	_policy\
+	_test2\
+	_test\
 	_path\
 	_cat\
 	_echo\

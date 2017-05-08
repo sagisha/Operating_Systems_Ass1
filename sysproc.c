@@ -16,14 +16,28 @@ sys_fork(void)
 int
 sys_exit(void)
 {
-  exit();
+  int i;
+  argint(0, &i);
+  exit(i);
   return 0;  // not reached
 }
 
 int
 sys_wait(void)
 {
-  return wait();
+  char* i;
+  argptr(0, &i, sizeof(int));
+  return wait((int*)i);
+}
+
+int
+sys_wait_stat(void)
+{
+  char* i;
+  char* p;
+  argptr(0, &i, sizeof(int));
+  argptr(1, &p, sizeof(struct perf));
+  return wait_stat((int*)i, (struct perf*)p);
 }
 
 int
@@ -74,6 +88,26 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+  return 0;
+}
+
+int
+sys_priority(void)
+{
+  int i;
+  if (argint(0, &i) < 0)
+	return -1;
+  priority(i);
+  return 0;
+}
+
+int
+sys_policy(void)
+{
+  int i;
+  if (argint(0, &i) < 0)
+	return -1;
+  policy(i);
   return 0;
 }
 

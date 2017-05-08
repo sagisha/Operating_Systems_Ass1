@@ -12,6 +12,7 @@
 #define BACK  5
 
 #define MAXARGS 10
+#define MAXPATH 128
 
 struct cmd {
   int type;
@@ -53,7 +54,57 @@ int fork1(void);  // Fork but panics on failure.
 void panic(char*);
 struct cmd *parsecmd(char*);
 
-// Execute cmd.  Never returns.
+char*
+findpath(char* cmd){
+	int cfd = open(cmd, O_RDONLY);
+	if (cfd > 0){
+		close(cfd);
+	}
+	else{
+		if (cmd[0] != 47)
+		{
+			int i=0,j=0,k=0;
+			int fd = open("/path", O_RDONLY);
+			char data[MAXPATH];
+			char* currpath = malloc(MAXPATH);
+			if (read(fd, data, MAXPATH) < 0){
+				printf(2, "ERROR path failed\n");
+			}
+			while(i < MAXPATH){
+				if(data[i] != 58){ // if the char is not ':'
+					currpath[j] = data[i];
+					j++;
+				}
+				else{
+					while (cmd[k] != 0){//adding the relative path to the current full path
+						currpath[j] = cmd[k];
+						j++;
+						k++;
+					}
+					currpath[j] = 0;
+					int execfd = open(currpath, O_RDONLY);
+					if (execfd > 0){ // check if the file exist in the path
+						close(execfd);
+						return currpath;
+					}
+					else{ // clears all vars to new path
+						int x;
+						for (x=0; x<j; x++){
+							currpath[x] = 0;
+						}
+						
+						j=0;
+						k=0;
+					}	
+				}
+				i++;
+			}
+		}
+	}
+	return cmd;
+}
+
+// Execute cmd.  Never returns. 
 void
 runcmd(struct cmd *cmd)
 {
@@ -65,7 +116,7 @@ runcmd(struct cmd *cmd)
   struct redircmd *rcmd;
 
   if(cmd == 0)
-    exit();
+    exit(0);
 
   switch(cmd->type){
   default:
@@ -74,8 +125,10 @@ runcmd(struct cmd *cmd)
   case EXEC:
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
-      exit();
-    exec(ecmd->argv[0], ecmd->argv);
+      exit(0);
+	// get full path from findpath and sent it to exec (if found)
+	char* path = findpath(ecmd->argv[0]);
+    exec(path, ecmd->argv);
     printf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
 
@@ -84,7 +137,7 @@ runcmd(struct cmd *cmd)
     close(rcmd->fd);
     if(open(rcmd->file, rcmd->mode) < 0){
       printf(2, "open %s failed\n", rcmd->file);
-      exit();
+      exit(0);
     }
     runcmd(rcmd->cmd);
     break;
@@ -93,7 +146,7 @@ runcmd(struct cmd *cmd)
     lcmd = (struct listcmd*)cmd;
     if(fork1() == 0)
       runcmd(lcmd->left);
-    wait();
+    wait(0);
     runcmd(lcmd->right);
     break;
 
@@ -117,8 +170,8 @@ runcmd(struct cmd *cmd)
     }
     close(p[0]);
     close(p[1]);
-    wait();
-    wait();
+    wait(0);
+    wait(0);
     break;
 
   case BACK:
@@ -127,7 +180,7 @@ runcmd(struct cmd *cmd)
       runcmd(bcmd->cmd);
     break;
   }
-  exit();
+  exit(0);
 }
 
 int
@@ -166,16 +219,16 @@ main(void)
     }
     if(fork1() == 0)
       runcmd(parsecmd(buf));
-    wait();
+    wait(0);
   }
-  exit();
+  exit(0);
 }
 
 void
 panic(char *s)
 {
   printf(2, "%s\n", s);
-  exit();
+  exit(0);
 }
 
 int
